@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Robot Car Wrench Game - Tap to Move</title>
@@ -44,36 +44,20 @@
     window.onload = function() {
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
+      const startButton = document.getElementById("startButton");
+      const newGameButton = document.getElementById("newGameButton");
 
-      let car = {
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-        angle: 0,
-        speed: 0,
-        acceleration: 1.0,
-        friction: 0.96,
-        maxSpeed: 10,
-        color: "#00ffff"
-      };
-
-      let wrench = {
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: 20
-      };
+      let car = { x: canvas.width / 2, y: canvas.height / 2, angle: 0, speed: 0, maxSpeed: 10 };
+      let wrench = { x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: 20 };
 
       function resetWrench() {
         wrench.x = Math.random() * (canvas.width - 80) + 40;
         wrench.y = Math.random() * (canvas.height - 80) + 40;
       }
 
-      function drawRobotCar() {
-        ctx.save();
-        ctx.translate(car.x, car.y);
-        ctx.rotate(car.angle);
-        ctx.fillStyle = car.color;
-        ctx.fillRect(-30, -15, 60, 30);
-        ctx.restore();
+      function drawCar() {
+        ctx.fillStyle = "#00ffff";
+        ctx.fillRect(car.x - 15, car.y - 10, 30, 20);
       }
 
       function drawWrench() {
@@ -86,7 +70,7 @@
       function update() {
         car.x += Math.cos(car.angle) * car.speed;
         car.y += Math.sin(car.angle) * car.speed;
-        car.speed *= car.friction;
+        car.speed *= 0.95;
 
         if (car.x < 0) car.x = canvas.width;
         if (car.x > canvas.width) car.x = 0;
@@ -94,7 +78,7 @@
         if (car.y > canvas.height) car.y = 0;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawRobotCar();
+        drawCar();
         drawWrench();
       }
 
