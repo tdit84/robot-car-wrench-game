@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
   <title>Robot Car Wrench Game - Tap to Move</title>
@@ -47,17 +47,74 @@
       const startButton = document.getElementById("startButton");
       const newGameButton = document.getElementById("newGameButton");
 
-      let car = { x: canvas.width / 2, y: canvas.height / 2, angle: 0, speed: 0, maxSpeed: 10 };
-      let wrench = { x: Math.random() * canvas.width, y: Math.random() * canvas.height, radius: 20 };
+      let gameState = "waiting";
+      let score = 0;
+      let timeLimit = 10;
+      let timeLeft = timeLimit;
+      let lastTime = 0;  
+
+      let car = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        angle: 0,
+        speed: 0,
+        acceleration: 1.0,
+        friction: 0.96,
+        maxSpeed: 10,
+        color: "#00ffff"
+      };
+
+      let wrench = {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: 20
+      };
 
       function resetWrench() {
         wrench.x = Math.random() * (canvas.width - 80) + 40;
         wrench.y = Math.random() * (canvas.height - 80) + 40;
       }
 
-      function drawCar() {
-        ctx.fillStyle = "#00ffff";
-        ctx.fillRect(car.x - 15, car.y - 10, 30, 20);
+      function startGame() {
+        gameState = "playing";
+        score = 0;
+        timeLeft = timeLimit;
+        car.x = canvas.width / 2;
+        car.y = canvas.height / 2;
+        car.angle = 0;
+        car.speed = 0;
+        car.color = 'hsl(' + Math.floor(Math.random() * 360) + ', 70%, 50%)';
+        resetWrench();
+        startButton.style.display = "none";
+        newGameButton.style.display = "none";
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+      }
+
+      startButton.addEventListener("click", startGame);
+      newGameButton.addEventListener("click", startGame);
+
+      function handleTap(e) {
+        if (gameState !== "playing") return;
+        let rect = canvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        let dx = x - car.x;
+        let dy = y - car.y;
+        car.angle = Math.atan2(dy, dx);
+        car.speed = car.maxSpeed;
+      }
+
+      canvas.addEventListener("click", handleTap);
+
+      function drawRobotCar() {
+        ctx.save();
+        ctx.translate(car.x, car.y);
+        ctx.rotate(car.angle);
+        ctx.fillStyle = car.color;
+        ctx.fillRect(-30, -15, 60, 30);
+        ctx.restore();
       }
 
       function drawWrench() {
@@ -67,33 +124,52 @@
         ctx.fill();
       }
 
-      function update() {
+      function update(deltaTime) {
         car.x += Math.cos(car.angle) * car.speed;
         car.y += Math.sin(car.angle) * car.speed;
-        car.speed *= 0.95;
+        car.speed *= car.friction;
 
         if (car.x < 0) car.x = canvas.width;
         if (car.x > canvas.width) car.x = 0;
         if (car.y < 0) car.y = canvas.height;
         if (car.y > canvas.height) car.y = 0;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawCar();
-        drawWrench();
+        let dx = car.x - wrench.x;
+        let dy = car.y - wrench.y;
+        if (Math.sqrt(dx * dx + dy * dy) < wrench.radius + 10) {
+          score++;
+          timeLeft = timeLimit;
+          resetWrench();
+        }
+
+        timeLeft -= deltaTime / 1000;
+        if (timeLeft <= 0) {
+          gameState = "gameover";
+        }
       }
 
-      canvas.addEventListener("click", function (e) {
-        let rect = canvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
+      function gameLoop(timestamp) {
+        let deltaTime = timestamp - lastTime;
+        lastTime = timestamp;
 
-        let dx = x - car.x;
-        let dy = y - car.y;
-        car.angle = Math.atan2(dy, dx);
-        car.speed = car.maxSpeed;
-      });
+        if (gameState === "playing") {
+          update(deltaTime);
+        }
 
-      setInterval(update, 16);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawWrench();
+        drawRobotCar();
+
+        if (gameState === "gameover") {
+          ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "red";
+          ctx.fillText("Game Over", canvas.width / 2 - 50, canvas.height / 2);
+          newGameButton.style.display = "inline-block";
+        } else {
+          requestAnimationFrame(gameLoop);
+        }
+      }
     };
   </script>
 </body>
